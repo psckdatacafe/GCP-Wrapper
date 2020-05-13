@@ -1,17 +1,28 @@
-# List of Services
-#   BigQuery 
-#   Cloud Pub-Sub (Pub-Only)
+# List of Supporting Services
+#   Google BigQuery 
+#   Google Cloud Pub-Sub (Pub-Only)
+#   Google Cloud Storage
+
+# --------------------------------------------------------------------------------------------------------
+# IMPORT REQUIRED PACKAGES
+# --------------------------------------------------------------------------------------------------------
 
 import os.path
 import json
+import pandas as pd
+
+# Auth Reference
+# https://google-auth.readthedocs.io/en/latest/reference/google.oauth2.service_account.html
+from google.oauth2 import service_account
+from google.cloud.exceptions import NotFound
 
 from google.cloud import bigquery
 from google.cloud import pubsub_v1
 from google.cloud import storage
 
-from google.oauth2 import service_account
-from google.cloud.exceptions import NotFound
-import pandas as pd
+# --------------------------------------------------------------------------------------------------------
+# BigQueryConnector
+# --------------------------------------------------------------------------------------------------------
 
 class BigQueryConnector():
 
@@ -119,16 +130,6 @@ class BigQueryConnector():
         self.__check_intitial()
         return  list(self.__client.list_datasets())
 
-    # def check_table_exist(self, dataset_id,table_id):
-    #     '''Format of table_id: dataset_id.table_id'''
-    #     self.__check_intitial()
-    #     table_reference = self.__client.dataset(dataset_id).table(table_id)
-    #     try:
-    #         self.__client.get_table(table_reference)
-    #         return True
-    #     except NotFound:
-    #         return False
-
     def check_table_exist(self, table_id):
         '''Format of table_id: dataset_id.table_id'''
         self.__check_intitial()
@@ -177,7 +178,7 @@ class BigQueryConnector():
         else:
             data_df.to_gbq(table_id, project_id=self.__project_id, location=self.__location, if_exists = 'append', progress_bar=False)
     
-    # View Tabel Session
+    # -----------------------------View Tabel Session-----------------------------
     def list_view(self, view_dataset_id):
         self.__check_intitial()
         tables = self.__client.list_tables('.'.join([self.__client.project,view_dataset_id]))
@@ -237,10 +238,6 @@ class BigQueryConnector():
             Ref. https://cloud.google.com/bigquery/docs/loading-data-cloud-storage-csv
         '''
         job_config = bigquery.LoadJobConfig()
-
-        # WRITE_EMPTY
-        # WRITE_APPEND
-        # WRITE_TRUNCATE
         
         job_config.write_disposition = bigquery.WriteDisposition.WRITE_APPEND
         job_config.skip_leading_rows = 1
@@ -311,9 +308,15 @@ class BigQueryConnector():
         print("Starting job {}".format(load_job.job_id))
         load_job.result()  # Waits for table load to complete.
 
-# ----------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------------------------
+# CloudPubConnector
+# --------------------------------------------------------------------------------------------------------
 
 # This class support only publish task
+# Reference
+# https://cloud.google.com/pubsub/docs/publisher
+# https://pypi.org/project/google-cloud-pubsub/
+
 class CloudPubConnector():
     def __init__(self):
         self.__project_id = None
@@ -413,13 +416,12 @@ class CloudPubConnector():
         future = self.__publisher.publish(topic_path, data_str, document=json.dumps(attr_dict))
         print(future.result())
 
-    
+# --------------------------------------------------------------------------------------------------------
+# CouldStorageConnector
+# --------------------------------------------------------------------------------------------------------
 
 # Reference
-# https://cloud.google.com/pubsub/docs/publisher
-# https://pypi.org/project/google-cloud-pubsub/
-
-# ----------------------------------------------------------------------------------------------
+# https://googleapis.dev/python/storage/latest/index.html
 
 class CouldStorageConnector():
 
@@ -511,12 +513,11 @@ class CouldStorageConnector():
         blob = bucket.blob(destination_blob_name)
         blob.upload_from_string(string_to_upload, type_str)
 
-# Reference
-# https://googleapis.dev/python/storage/latest/index.html
+# --------------------------------------------------------------------------------------------------------
+# Testing 
+# --------------------------------------------------------------------------------------------------------
 
 if __name__ == '__main__':
     pass
 
 
-# Auth Reference
-# https://google-auth.readthedocs.io/en/latest/reference/google.oauth2.service_account.html
